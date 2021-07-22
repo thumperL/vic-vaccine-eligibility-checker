@@ -7,8 +7,6 @@ const fs = require('fs');
 const targetUrl = 'https://www.coronavirus.vic.gov.au/who-can-get-vaccinated';
 const existingEligibilityFilePath = 'eligible_list.txt';
 
-
-
 // check file exists, if yes return data
 const existingFilePromise = new Promise((resolve, reject) => {
   try {
@@ -25,9 +23,16 @@ const existingFilePromise = new Promise((resolve, reject) => {
   }
 });
 
-request(targetUrl)
+// Get live vic gov eligible list
+const liveListPromise = new Promise((resolve, reject)=> {
+  request(targetUrl)
   .then((html) => {
     const $ = cheerio.load(html);
-    const eligible_content = $('.rpl-markup__inner');
+    return resolve($('.rpl-markup__inner').text());
   }) 
-  .catch((err) => console.log(err));
+  .catch((err) => reject('Getting VIC GOV live data failed'));
+});
+
+Promise.all([existingFilePromise, liveListPromise]).then(([eligibleText, liveEligibleText]) => {
+  
+});

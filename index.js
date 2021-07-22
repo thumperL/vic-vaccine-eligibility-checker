@@ -34,5 +34,14 @@ const liveListPromise = new Promise((resolve, reject)=> {
 });
 
 Promise.all([existingFilePromise, liveListPromise]).then(([eligibleText, liveEligibleText]) => {
-  
+  if (eligibleText !== liveEligibleText) {
+    const newEligibleText = liveEligibleText.replace(eligibleText, '');
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDay().toString().padStart(2, '0') + '_' + today.getHours().toString().padStart(2, '0') + today.getMinutes().toString().padStart(2, '0');
+    fs.promises.writeFile('added_' + dateStr + '.txt', newEligibleText)
+    .then((data) => {
+      fs.promises.writeFile('eligible_list.txt', liveEligibleText)
+      .then(()=>console.log(`NEW AVAILABLE!\r\n${newEligibleText}`));
+    });
+  }
 });

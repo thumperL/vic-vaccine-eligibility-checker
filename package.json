@@ -1,0 +1,20 @@
+{
+  "name": "vic-vaccine-eligibility-checker",
+  "version": "1.0.0",
+  "description": "Crawl https://www.coronavirus.vic.gov.au/who-can-get-vaccinated for any new eligible group and get notified.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "author": "Thumper",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.10",
+    "nodemon": "^2.0.12",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6"
+  }
+}

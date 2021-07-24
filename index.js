@@ -57,10 +57,9 @@ Promise.all([existingFilePromise, liveListPromise])
       resolve(fs.promises.writeFile('eligible_list.txt', JSON.stringify(liveEligibleArr)).then(()=>true));
     });
     const notify = new Promise((resolve, reject) => {
-      const DOMAIN = "";
-      const mg = mailgun({apiKey: process.env.EMAIL_API, domain: process.env.EMAIL_DOMAIN});
+      const mg = mailgun({apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN});
       const data = {
-        from: process.env.EMAIL_FROM,
+        from: `Victoria Vaccination Eligibility Monitor <postmaster@${process.env.MAILGUN_DOMAIN}>`,
         to: process.env.EMAIL_TO,
         subject: "New Eligible list Changes",
         html: `<pre style="white-space:initial"> <pre>${JSON.stringify(newEligibleArr)}</pre> </pre>`
@@ -69,8 +68,10 @@ Promise.all([existingFilePromise, liveListPromise])
     });
     Promise.all([writeFileNew, writeFileOverride, notify]).then(() => {
       console.log('Notified and Completed');
+      process.exit(1)
     })
   } else {
     console.log('Completed');
+    process.exit(1)
   }
 });

@@ -35,20 +35,23 @@ cron.schedule('*/15 * * * *', async () => {
         eligibleItems.push($(e).text())
       });
       return resolve(eligibleItems);
-    }) 
+    })
     .catch((err) => reject('Getting VIC GOV live data failed'));
   });
 
-  Promise.all([existingFilePromise, liveListPromise]).then(([eligibleText, liveEligibleText]) => {
-    if (eligibleText !== liveEligibleText) {
-      const newEligibleText = liveEligibleText.replace(eligibleText, '');
+  Promise.all([existingFilePromise, liveListPromise]).then(([existsEligibleArr, liveEligibleArr]) => {
+    const newEligibleArr = liveEligibleArr.filter((x) => !existsEligibleArr.includes(x));
+
+    // If there is any difference
+    if (newEligibleArr.length !== 0) {
       const today = new Date();
       const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDay().toString().padStart(2, '0') + '_' + today.getHours().toString().padStart(2, '0') + today.getMinutes().toString().padStart(2, '0');
-      fs.promises.writeFile('added_' + dateStr + '.txt', newEligibleText)
-      .then((data) => {
-        fs.promises.writeFile('eligible_list.txt', liveEligibleText)
-        .then(()=>console.log(`NEW AVAILABLE!\r\n${newEligibleText}`));
-      });
+      const writeFiles = (async (dateStr) => {
+        let newFile = (existsEligibleArr.length === 0)? true : await fs.promises.writeFile('added_' + dateStr + '.txt', JSON.stringify(newEligibleArr)).then(()=>true);
+        let overrideFile =  await fs.promises.writeFile('eligible_list.txt', JSON.stringify(liveEligibleArr)).then(()=>true);
+        return (newFile && overrideFile);
+      }).catch((err)=>console.error(err));
+      writeFiles(dateStr);
     }
   });
 });

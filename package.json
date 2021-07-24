@@ -13,6 +13,7 @@
   "keywords": [],
   "dependencies": {
     "cheerio": "^1.0.0-rc.10",
+    "dotenv": "^10.0.0",
     "node-cron": "^3.0.0",
     "nodemon": "^2.0.12",
     "request": "^2.88.2",

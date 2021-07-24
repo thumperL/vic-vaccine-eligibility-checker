@@ -1,8 +1,12 @@
 /* Required Packages */
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const request = require('request-promise');
 const cheerio = require('cheerio');
 const fs = require('fs');
 const cron = require('node-cron');
+const { resolve } = require('path');
 
 cron.schedule('*/15 * * * *', async () => {
   /* Const variables */

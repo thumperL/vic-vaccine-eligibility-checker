@@ -15,9 +15,9 @@ cron.schedule('*/15 * * * *', async () => {
       fs.readFile(existingEligibilityFilePath, 'utf8', async (err, data) => {
         if (err) {
           await fs.writeFile(existingEligibilityFilePath, '', ()=>{});
-          return resolve('');
+          return resolve(Array());
         } else {
-          return resolve(data);
+          return resolve((data)? JSON.parse(data) : Array());
         }
       })
     } catch {
@@ -30,7 +30,11 @@ cron.schedule('*/15 * * * *', async () => {
     request(targetUrl)
     .then((html) => {
       const $ = cheerio.load(html);
-      return resolve($('.rpl-markup__inner').text());
+      let eligibleItems = Array();
+      $('.rpl-markup__inner').children('ul:first-of-type').children('li').each((i, e) => {
+        eligibleItems.push($(e).text())
+      });
+      return resolve(eligibleItems);
     }) 
     .catch((err) => reject('Getting VIC GOV live data failed'));
   });

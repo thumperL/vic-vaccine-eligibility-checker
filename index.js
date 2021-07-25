@@ -5,8 +5,8 @@ if (process.env.NODE_ENV !== 'production') {
 const request = require('request-promise');
 const cheerio = require('cheerio');
 const fs = require('fs');
-const mailgun = require('mailgun-js');
 const { Client } = require('pg');
+const nodeMailer = require('nodemailer');
 
 (async () => {
   /* Const variables */
@@ -56,19 +56,26 @@ const { Client } = require('pg');
   // If there is any difference
   if (newEligibleArr.length !== 0) {
     const notify = new Promise((resolve, reject) => {
-      const mg = mailgun({
-        apiKey: process.env.MAILGUN_API_KEY,
-        domain: process.env.MAILGUN_DOMAIN,
+      const transporter = nodeMailer.createTransport({
+        host  : process.env.SMTP_HOST,
+        port  : process.env.SMTP_PORT,
+        secure: true,
+        auth  : {
+          // should be replaced with real sender's account
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
       });
-      const data = {
-        from   : `Victoria Vaccination Eligibility Monitor <postmaster@${process.env.MAILGUN_DOMAIN}>`,
+      const mailOptions = {
+        // should be replaced with real recipient's account
         to     : process.env.EMAIL_TO,
-        subject: 'New Eligible list Changes',
+        subject: 'VIC COVID19 Jab New Eligible Items',
         html   : `<pre style="white-space:initial"> <pre>${JSON.stringify(newEligibleArr)}</pre> </pre>`,
       };
-      mg.messages().send(data, (error, body) => {
+      transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-          resolve(`[Email Error]\r\n${error}`);
+          console.error(error);
+          resolve(false);
         }
         resolve(true);
       });

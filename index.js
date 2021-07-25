@@ -42,48 +42,48 @@ const { Client } = require('pg');
     });
   });
 
-  Promise.all([existingEligibleItems, liveListPromise])
-  .then(([existsEligibleArr, liveEligibleArr]) => {
-    const existsEligibleArrSimple = existsEligibleArr.map((item) => item.content);
-    const newEligibleArr = liveEligibleArr.filter((x) => !existsEligibleArrSimple.includes(x));
+  const [existingArr, liveArr] = await Promise.all([existingItems, liveItemsPromise]);
+  const existingArrSimple = (existingArr) ? existingArr.map((item) => item.content) : [];
+  const newEligibleArr = liveArr.filter((x) => !existingArrSimple.includes(x));
 
-    // If there is any difference
-    if (newEligibleArr.length !== 0) {
-      const today = new Date();
-      const dateStr = `${today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDay().toString().padStart(2, '0')}_${today.getHours().toString().padStart(2, '0')}${today.getMinutes().toString().padStart(2, '0')}`;
-      const writeFileNew = new Promise((resolve, reject) => {
-        resolve((existsEligibleArr.length === 0) ? true : fs.promises.writeFile(`added_${dateStr}.txt`, JSON.stringify(newEligibleArr)).then(() => true));
+  // If there is any difference
+  if (newEligibleArr.length !== 0) {
+    const notify = new Promise((resolve, reject) => {
+      const mg = mailgun({
+        apiKey: process.env.MAILGUN_API_KEY,
+        domain: process.env.MAILGUN_DOMAIN,
       });
-      const writeFileOverride = new Promise((resolve, reject) => {
-        resolve(fs.promises.writeFile('eligible_list.txt', JSON.stringify(liveEligibleArr)).then(() => true));
+      const data = {
+        from   : `Victoria Vaccination Eligibility Monitor <postmaster@${process.env.MAILGUN_DOMAIN}>`,
+        to     : process.env.EMAIL_TO,
+        subject: 'New Eligible list Changes',
+        html   : `<pre style="white-space:initial"> <pre>${JSON.stringify(newEligibleArr)}</pre> </pre>`,
+      };
+      mg.messages().send(data, (error, body) => {
+        if (error) {
+          resolve(`[Email Error]\r\n${error}`);
+        }
+        resolve(true);
       });
-      const notify = new Promise((resolve, reject) => {
-        const mg = mailgun({
-          apiKey: process.env.MAILGUN_API_KEY,
-          domain: process.env.MAILGUN_DOMAIN,
-        });
-        const data = {
-          from   : `Victoria Vaccination Eligibility Monitor <postmaster@${process.env.MAILGUN_DOMAIN}>`,
-          to     : process.env.EMAIL_TO,
-          subject: 'New Eligible list Changes',
-          html   : `<pre style="white-space:initial"> <pre>${JSON.stringify(newEligibleArr)}</pre> </pre>`,
-        };
-        mg.messages().send(data, (error, body) => {
-          if (error) {
-            resolve(`[Email Error]\r\n${error}`);
-          }
-          resolve('[Email Sent]');
-        });
-      });
-      Promise.all([writeFileNew, writeFileOverride]).then(() => {
+    });
+    const update = new Promise((resolve) => {
+      const valuesStr = newEligibleArr.map((item) => `('${item.toString()}')`).join();
+      client
+      .query(`INSERT INTO eligible_items(content) VALUES ${valuesStr}`)
+      .then((res) => (resolve(res.rowCount === newEligibleArr.length)));
+    });
+    Promise.all([update, notify])
+    .then(([updateRes, notifyRes]) => {
+      if (updateRes === notifyRes) {
         console.log('Notified and Completed');
         process.exit(1);
-      });
-    } else {
-      console.log('Completed');
-      process.exit(1);
-    }
-  });
-
-  // await client.end();
+      } else {
+        console.log('Error occurred in either update or notify');
+        process.exit(1);
+      }
+    });
+  } else {
+    console.log('Completed');
+    process.exit(1);
+  }
 })().catch((err) => console.error(err));

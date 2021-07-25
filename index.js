@@ -18,6 +18,13 @@ const { Client } = require('pg');
   };
   const client = new Client(credentials);
   await client.connect();
+  await client.query(`CREATE SEQUENCE IF NOT EXISTS untitled_table_195_id_seq;
+                      CREATE TABLE IF NOT EXISTS "eligible_items" (
+                          "id" int4 NOT NULL DEFAULT nextval('untitled_table_195_id_seq'::regclass),
+                          "content" varchar NOT NULL DEFAULT ''::character varying,
+                          "added" timestamp NOT NULL DEFAULT now(),
+                          PRIMARY KEY ("id")
+                      )`);
   const targetUrl = 'https://www.coronavirus.vic.gov.au/who-can-get-vaccinated';
   const existingEligibilityFilePath = 'eligible_list.txt';
 

@@ -9,8 +9,6 @@ const mailgun = require('mailgun-js');
 const { Client } = require('pg');
 
 (async () => {
-  // const { resolve } = require('path');
-
   /* Const variables */
   const credentials = {
     connectionString: process.env.DATABASE_URL,
@@ -23,7 +21,7 @@ const { Client } = require('pg');
   const targetUrl = 'https://www.coronavirus.vic.gov.au/who-can-get-vaccinated';
   const existingEligibilityFilePath = 'eligible_list.txt';
 
-  const existingEligibleItems = new Promise((resolve, reject) => {
+  const existingItems = new Promise((resolve) => {
     client
     .query('SELECT * FROM eligible_items')
     .then((row) => {
@@ -32,7 +30,7 @@ const { Client } = require('pg');
   });
 
   // Get live vic gov eligible list
-  const liveListPromise = new Promise((resolve) => {
+  const liveItemsPromise = new Promise((resolve) => {
     request(targetUrl)
     .then((html) => {
       const $ = cheerio.load(html);
@@ -40,7 +38,7 @@ const { Client } = require('pg');
       $('.rpl-markup__inner').children('ul:first-of-type').children('li').each((i, e) => {
         eligibleItems.push($(e).text());
       });
-      return resolve(eligibleItems);
+      resolve(eligibleItems);
     });
   });
 
